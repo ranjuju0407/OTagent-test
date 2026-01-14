@@ -7,10 +7,12 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      enableRemoteModule: false,
+      sandbox: false
     },
     autoHideMenuBar: true
   });
-
+  win.webContents.openDevTools()
   // 强制加载 Vite 启动后的本地地址
   win.loadURL('http://localhost:5173').catch(() => {
     console.log("Vite 还没准备好，5秒后重试...");
