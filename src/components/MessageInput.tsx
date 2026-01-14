@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Paperclip, Send, Globe } from 'lucide-react';
 
-const MessageInput = ({ onSend }: { onSend: (text: string, file?: File) => void }) => {
+const MessageInput = ({ onSend, disabled = false }: { onSend: (text: string, file?: File) => void; disabled?: boolean }) => {
   const [input, setInput] = React.useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -18,14 +18,16 @@ const MessageInput = ({ onSend }: { onSend: (text: string, file?: File) => void 
           rows={1}
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          disabled={disabled}
           placeholder="给 OTagent 发送消息..."
-          className="w-full bg-transparent border-none focus:ring-0 resize-none py-3 px-12 text-gray-700"
+          className="w-full bg-transparent border-none focus:ring-0 resize-none py-3 px-12 text-gray-700 disabled:opacity-50"
         />
         
         {/* 左侧附件按钮 */}
         <button 
           onClick={() => fileInputRef.current?.click()}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black"
+          disabled={disabled}
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black disabled:opacity-50"
         >
           <Paperclip size={20} />
           <input type="file" ref={fileInputRef} hidden accept=".pdf" />
@@ -36,7 +38,7 @@ const MessageInput = ({ onSend }: { onSend: (text: string, file?: File) => void 
           <button className="text-gray-400 hover:text-blue-500"><Globe size={20} /></button>
           <button 
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || disabled}
             className="bg-black text-white p-1.5 rounded-full disabled:opacity-30"
           >
             <Send size={18} />
@@ -49,3 +51,5 @@ const MessageInput = ({ onSend }: { onSend: (text: string, file?: File) => void 
     </div>
   );
 };
+
+export default MessageInput;

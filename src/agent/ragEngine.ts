@@ -1,51 +1,74 @@
 // src/agent/ragEngine.ts
 
-// 1. 改用 WebPDFLoader (专门用于浏览器/前端环境)
 import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { Ollama, OllamaEmbedding, Settings } from "llamaindex";
+import { OllamaEmbeddings } from "@langchain/ollama";
 
-// 定义文档接口
-interface Document {
-  pageContent: string;
-  metadata: Record<string, any>;
-}
-
-// ✅ 修改：接收 Blob (文件对象) 而不是 string (路径)
-export const processPDF = async (fileBlob: Blob, apiKey: string) => {
-  console.log("正在解析 PDF Blob...");
+/**
+ * 使用本地 Ollama 模型处理 PDF
+ * 
+ * ⚠️ 前置条件：
+ * 1. 确保本地运行 Ollama：启动 Ollama 应用
+ * 2. 拉取 embedding 模型：ollama pull nomic-embed-text
+ * 3. 模型会在 http://localhost:11434 运行
+ */
+export const processPDF = async (fileBlob: Blob) => {
+  console.log("正在解析 PDF...");
   
-  // 1. 加载 PDF (Web 模式)
-  const loader = new WebPDFLoader(fileBlob, {
-    // 必须保留，防止 pdfjs 解析报错
-    parsedItemSeparator: " ", 
-  });
-  const docs = await loader.load();
+  try {
+    const loader = new WebPDFLoader(fileBlob, {
+      parsedItemSeparator: " ", 
+    });
+    const docs = await loader.load();
 
-  // 2. 切割文本
-  const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 500, //稍微改小一点，检索更精准
-    chunkOverlap: 50,
-  });
-  const splitDocs = await splitter.splitDocuments(docs);
+    const splitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 500,
+      chunkOverlap: 50,
+    });
+    const splitDocs = await splitter.splitDocuments(docs);
 
-  // 3. 存入向量库
-  const vectorStore = await MemoryVectorStore.fromDocuments(
-    splitDocs,
-    new OpenAIEmbeddings({
-      openAIApiKey: apiKey, 
-      // 如果你后面要换本地模型，这里可以改
-    })
-  );
+    // 使用本地 Ollama Embedding 模型
+    // ⚠️ 确保已执行：ollama pull nomic-embed-text
+    const embeddings = new OllamaEmbeddings({
+      model: "nomic-embed-text", // 可选其他模型：llama3, mxbai-embed-large 等
+      baseUrl: "http://localhost:11434", // 默认端口，通常不用改
+    });
 
-  console.log("PDF 处理完成，共生成片段:", splitDocs.length);
-  return vectorStore;
+    const vectorStore = await MemoryVectorStore.fromDocuments(
+      splitDocs,
+      embeddings
+    );
+
+    console.log(`✅ PDF 处理完成，共生成 ${splitDocs.length} 个片段`);
+    return vectorStore;
+  } catch (error) {
+    console.error("❌ PDF 处理失败:", error);
+    throw new Error(
+      `PDF 处理失败: ${error instanceof Error ? error.message : String(error)}。\n` +
+      "请确保:\n" +
+      "1. Ollama 已启动\n" +
+      "2. 执行过: ollama pull nomic-embed-text"
+    );
+  }
 };
 
-// 检索函数保持不变
-export const queryPDF = async (vectorStore: any, question: string) => {
-  const relevantDocs = await vectorStore.similaritySearch(question, 4); // 找4个相关片段
-  const context = relevantDocs.map((d: Document) => d.pageContent).join("\n\n---\n\n");
-  return context;
+/**
+ * 从向量库检索相关文档
+ */
+export const retrieveDocuments = async (
+  vectorStore: MemoryVectorStore,
+  question: string,
+  k: number = 4
+): Promise<string> => {
+  try {
+    const relevantDocs = await vectorStore.similaritySearch(question, k);
+    const context = relevantDocs
+      .map(doc => doc.pageContent)
+      .join("\n\n---\n\n");
+    return context;
+  } catch (error) {
+    console.error("❌ 文档检索失败:", error);
+    return "";
+  }
 };
