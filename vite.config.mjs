@@ -6,8 +6,13 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      // shim ansi-styles to provide a default export for ESM consumers
-      'ansi-styles': resolve(process.cwd(), 'src/shims/ansi-styles-shim.js')
+       'ansi-styles': resolve(process.cwd(), 'src/shims/ansi-styles-shim.js'),
+      // shim base64-js to provide a default export for ESM consumers
+      'base64-js': resolve(process.cwd(), 'src/shims/base64-js-shim.js'),
+      // shim node:module for Electron renderer usage
+      'node:module': resolve(process.cwd(), 'src/shims/node-module-shim.js'),
+      'module': resolve(process.cwd(), 'src/shims/node-module-shim.js'),
+      'async_hooks': resolve(process.cwd(), 'src/shims/async-hooks-shim.js')
     }
   },
   define: {
@@ -29,7 +34,11 @@ export default defineConfig({
       // 下面是针对 langsmith/semver 的预构建，避免运行时 ESM/CJS 导出不匹配
       'langsmith',
       'semver',
-      'ansi-styles'
+       'ansi-styles',
+      'base64-js',
+      'node:module',
+      'module',
+      'async_hooks'
     ],
     // 排除核心包，防止 Node 代码泄露到浏览器
     exclude: ['@langchain/community', '@langchain/core']
