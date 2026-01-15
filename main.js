@@ -13,11 +13,11 @@ function createWindow() {
     },
     autoHideMenuBar: true
   });
-  
-  if (!app.isPackaged) {
-    win.webContents.openDevTools();
+
+   if (!app.isPackaged) {
+  win.webContents.openDevTools();
   }
-  
+
   win.loadURL('http://localhost:5173').catch(() => {
     console.log("Vite 还没准备好，5秒后重试...");
     setTimeout(() => win.loadURL('http://localhost:5173'), 5000);

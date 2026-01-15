@@ -12,7 +12,8 @@ export default defineConfig({
       // shim node:module for Electron renderer usage
       'node:module': resolve(process.cwd(), 'src/shims/node-module-shim.js'),
       'module': resolve(process.cwd(), 'src/shims/node-module-shim.js'),
-      'async_hooks': resolve(process.cwd(), 'src/shims/async-hooks-shim.js')
+      'async_hooks': resolve(process.cwd(), 'src/shims/async-hooks-shim.js'),
+      'node:async_hooks': resolve(process.cwd(), 'src/shims/async-hooks-shim.js')
     }
   },
   define: {
@@ -38,7 +39,8 @@ export default defineConfig({
       'base64-js',
       'node:module',
       'module',
-      'async_hooks'
+      'async_hooks',
+      'node:async_hooks'
     ],
     // 排除核心包，防止 Node 代码泄露到浏览器
     exclude: ['@langchain/community', '@langchain/core']

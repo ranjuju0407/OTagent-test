@@ -23,7 +23,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   
   // DeepSeek API Key - 从环境变量读取，或允许用户输入
-  const apiKey = process.env.REACT_APP_DEEPSEEK_API_KEY || 
+  const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY ||
+                 import.meta.env.DEEPSEEK_API_KEY ||
                  localStorage.getItem('deepseek_api_key') ||
                  "";
 
@@ -33,6 +34,7 @@ function App() {
       setIsLoading(true);
       console.log("📁 开始处理文件:", file.name);
       
+      const { processPDF } = await import('../agent/ragEngine');
       const store = await processPDF(file);
       setVectorStore(store);
       
@@ -78,6 +80,10 @@ function App() {
 
     try {
       // 转换消息格式为 LangChain 格式
+      const [{ graph }, { HumanMessage }] = await Promise.all([
+        import('../agent/graph'),
+        import('@langchain/core/messages'),
+      ]);
       const langChainMessages = newHistory.map(m => new HumanMessage(m.content));
 
       // 调用 DeepSeek Agent（传入 vectorStore 和 apiKey）
